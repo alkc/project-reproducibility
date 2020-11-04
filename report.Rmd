@@ -22,23 +22,32 @@ Hello world.
 
 ```{r libs_and_data, message=FALSE}
 library(tidyverse)
+library(caret)
+library(lubridate)
 library(here)
 
 # Create variable specification for dataset:
 col_spec <- cols(
   .default = col_double(),
-  datetime = col_datetime(),
+  datetime = col_datetime(format = ""),
   season = col_integer(),
   holiday = col_logical(),
   workingday = col_logical(),
   weather = col_factor(),
-  casual = col_integer(),
-  registered = col_integer(),
   count = col_integer()
 )
 
-bikeshare <- read_csv(here("data/train.csv"), col_types = col_spec)
+bikeshare <- read_csv(here::here("data/train.csv"), col_types = col_spec)
 ```
+
+We drop the `casual` and `registered` columns, as they add up to the `count` column anyway -- making it a linear 
+combination of both.
+
+```{r}
+bikeshare <- bikeshare %>% 
+  select(-registered, -casual)
+```
+
 
 Expand season names:
 
@@ -71,21 +80,108 @@ bikeshare <-  bikeshare %>%
     temp_celcius = temp,
     feels_like_temp_celcius = atemp,
     relative_humidity = humidity,
-    nbr_casual_user_rentals = casual,
-    nbr_registered_user_rentals = registered,
     wind_speed = windspeed,
     total_nbr_rentals = count
   )
 ```
+
+Finally, the hour at which bikes are rented _feels_ like it should have some predictive power. Split the date time
+into a time column:
+
+```{r}
+bikeshare <- bikeshare %>% 
+  mutate(hour = hour(date_time)) %>% 
+  select(date_time, hour, everything())
+```
+
 
 Final data set:
 
 ```{r}
 glimpse(bikeshare)
 ```
+
 ### Data exploration:
 
- `total_nbr_rentals` seems to be a linear combination of `nbr_casual_user_rentals` and `nbr_registered_user_rentals`
+Check for missing data:
+ 
+```{r}
+bikeshare %>% 
+  is.na %>% 
+  any()
+```
+ 
+Check for correlation between counts and numeric variables
+ 
+```{r}
+cor_mat <- bikeshare %>% 
+  select(where(is.numeric)) %>% 
+  cor(method = "spearman")
+
+cor_mat
+
+```
+Exploring categorical variables:
+ 
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = weather, y = total_nbr_rentals)) +
+  geom_violin() 
+```
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = season, y = total_nbr_rentals)) +
+  geom_violin()
+```
+Move on to numeric variables. 
+
+Start with hour:
+
+
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = hour, y = total_nbr_rentals)) +
+  geom_jitter(alpha = 0.1)
+```
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = hour, y = total_nbr_rentals)) +
+  geom_jitter(alpha = 0.1) + 
+  facet_wrap(~season)
+```
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = hour, y = total_nbr_rentals)) +
+  geom_jitter(alpha = 0.1) + 
+  facet_wrap(~weather)
+```
+There seems to be only one data point for weather type four. Useless.
+
+```{r}
+bikeshare <- bikeshare %>% 
+  filter(weather != 4)
+```
+
+
+
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = wind_speed, y = total_nbr_rentals)) + 
+  geom_jitter(alpha = 0.1)
+```
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = temp_celcius, y = total_nbr_rentals)) + 
+  geom_jitter(alpha = 0.1)
+```
+### Model
+
+Create test and train data set
+
+```{r}
+
+```
+
 
 ## Literature
 
