@@ -1,5 +1,5 @@
 ---
-title: "Rush Hour explorations"
+title: "Rush Hour Explorations"
 subtitle: "Assignment for PVG0038 Reproducibility in Research with a focus on data analysis using the program R"
 author: "Alexander Koc"
 date: '2020-11-04'
