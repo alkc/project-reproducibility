@@ -4,6 +4,10 @@ subtitle: "Assignment for PVG0038 Reproducibility in Research with a focus on da
 author: "Alexander Koc"
 date: '2020-11-04'
 output: html_document
+toc_depth: 3
+number_sections: true
+theme: lumen
+
 ---
 
 ```{r setup, include=FALSE}
