@@ -14,9 +14,86 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Hello world.
 
-##  Materials and Methods 
-
+## Materials and Methods 
 
 ## Results
 
+### Data preparation
+
+```{r libs_and_data, message=FALSE}
+library(tidyverse)
+library(here)
+
+# Create variable specification for dataset:
+col_spec <- cols(
+  .default = col_double(),
+  datetime = col_datetime(),
+  season = col_integer(),
+  holiday = col_logical(),
+  workingday = col_logical(),
+  weather = col_factor(),
+  casual = col_integer(),
+  registered = col_integer(),
+  count = col_integer()
+)
+
+bikeshare <- read_csv(here("data/train.csv"), col_types = col_spec)
+```
+
+Expand season names:
+
+```{r}
+bikeshare <- bikeshare %>% 
+  mutate(season = map_chr(season, function(season_code) {
+    
+    seasons <- c("spring" = 1, "summer" = 2,  "fall" = 3, winter = "4")
+    translated_name <- names(seasons[season_code])
+    
+    if(is.na(translated_name)) {
+      err <- paste("Invalid season code:", season_code)
+      stop(err)
+    }
+    
+    return(translated_name)
+    
+  }))
+
+```
+
+I expand some column names to spell out what they actually are and rename others to make data set look nicer. The latter
+part is totally necessary.
+
+```{r}
+bikeshare <-  bikeshare %>% 
+  rename(
+    date_time = datetime,
+    working_day = workingday,
+    temp_celcius = temp,
+    feels_like_temp_celcius = atemp,
+    relative_humidity = humidity,
+    nbr_casual_user_rentals = casual,
+    nbr_registered_user_rentals = registered,
+    wind_speed = windspeed,
+    total_nbr_rentals = count
+  )
+```
+
+Final data set:
+
+```{r}
+glimpse(bikeshare)
+```
+### Data exploration:
+
+ `total_nbr_rentals` seems to be a linear combination of `nbr_casual_user_rentals` and `nbr_registered_user_rentals`
+
 ## Literature
+
+## Session
+
+Packages and R version used in my analysis.
+
+```{r}
+devtools::session_info()
+```
+
