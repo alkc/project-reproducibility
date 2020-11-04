@@ -1,0 +1,21 @@
+---
+title: "Reproducibility Project"
+subtitle: "Assignment for PVG0038 Reproducibility in Research with a focus on data analysis using the program R"
+author: "Alexander Koc"
+date: '2020-11-04'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Abstract
+
+Hello world.
+
+## Methods and Materials
+
+## Results
+
+## Literature
