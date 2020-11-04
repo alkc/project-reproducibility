@@ -20,11 +20,22 @@ Hello world.
 
 ### Data preparation
 
+```{r}
+set.seed(777)
+```
+
+
 ```{r libs_and_data, message=FALSE}
 library(tidyverse)
 library(caret)
 library(lubridate)
 library(here)
+library(parallel)
+library(ranger)
+library(forcats)
+
+# Set number of cores for parallel computation
+nbr_cores <- parallel::detectCores()
 
 # Create variable specification for dataset:
 col_spec <- cols(
@@ -48,7 +59,6 @@ bikeshare <- bikeshare %>%
   select(-registered, -casual)
 ```
 
-
 Expand season names:
 
 ```{r}
@@ -67,6 +77,8 @@ bikeshare <- bikeshare %>%
     
   }))
 
+# Convert to factor:
+bikeshare$season <- as.factor(bikeshare$season) 
 ```
 
 I expand some column names to spell out what they actually are and rename others to make data set look nicer. The latter
@@ -90,7 +102,7 @@ into a time column:
 
 ```{r}
 bikeshare <- bikeshare %>% 
-  mutate(hour = hour(date_time)) %>% 
+  mutate(hour = hour(date_time)) %>%
   select(date_time, hour, everything())
 ```
 
@@ -102,6 +114,22 @@ glimpse(bikeshare)
 ```
 
 ### Data exploration:
+
+Data summary
+
+```{r}
+summary(bikeshare)
+```
+Seems like there is only one row with weather code "4". Remove it:
+
+```{r}
+bikeshare <- bikeshare %>%
+  filter(weather != 4)
+
+# Drop unused factor level to avoid annoying messages later:
+bikeshare$weather <- forcats::fct_drop(bikeshare$weather)
+```
+
 
 Check for missing data:
  
@@ -123,63 +151,119 @@ cor_mat
 ```
 Exploring categorical variables:
  
+Start by looking how rides are distributed across the different weather types. The higher the weather code, the more 
+terrible the weather. 
+ 
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = weather, y = total_nbr_rentals)) +
   geom_violin() 
 ```
+We do the same visualization for the different types of seasons:
+
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = season, y = total_nbr_rentals)) +
   geom_violin()
 ```
-Move on to numeric variables. 
+
+Visualize total number of rentals by daily hour. 
 
 Start with hour:
 
-
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = hour, y = total_nbr_rentals)) +
   geom_jitter(alpha = 0.1)
 ```
+Clear peak of rides around rush hours. Investigate to see if there is an interaction
+with the workday variable.
+
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = hour, y = total_nbr_rentals, color = working_day)) +
+  geom_jitter(alpha = 0.1)
+```
+Split up the plot above into two plots and the pattern becomes more clear. Rush hour peaks of course exist on working days.
+Weekends seem to have more bike share activity in the hours on and after midnight.
+
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = hour, y = total_nbr_rentals)) +
-  geom_jitter(alpha = 0.1) + 
-  facet_wrap(~season)
+  geom_jitter(alpha = 0.1) +
+  facet_wrap(~working_day)
 ```
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = hour, y = total_nbr_rentals)) +
-  geom_jitter(alpha = 0.1) + 
-  facet_wrap(~weather)
-```
-There seems to be only one data point for weather type four. Useless.
+Create new logical variable `rush_hour`:
 
 ```{r}
 bikeshare <- bikeshare %>% 
-  filter(weather != 4)
+  mutate(rush_hour = map2_lgl(hour, working_day, function(hour, working) {
+    
+    # If not working day then no rush hour
+    if(working == FALSE) {
+      return(FALSE)
+    }
+    
+    if((5 < hour & hour < 10) | (15 < hour & hour < 19)) {
+      return(TRUE)
+    }
+    
+    return(FALSE)
+    
+  }))
 ```
 
-
+How does the new feature describe the data?
 
 ```{r}
 bikeshare %>% 
-  ggplot(aes(x = wind_speed, y = total_nbr_rentals)) + 
-  geom_jitter(alpha = 0.1)
+  ggplot(aes(x = rush_hour, y= total_nbr_rentals)) + 
+  geom_violin()
 ```
+Continue looking at rides per hour, but this time by seasons and weather
+
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = hour, y = total_nbr_rentals)) +
+  geom_jitter(alpha = 0.1) + 
+  geom_smooth(method = "loess") + 
+  facet_grid(rows = vars(working_day), cols = vars(season))
+```
+
+```{r}
+bikeshare %>% 
+  ggplot(aes(x = hour, y = total_nbr_rentals)) +
+  geom_jitter(alpha = 0.1) + 
+  geom_smooth(method = "loess") + 
+  facet_wrap(~working_day + weather) 
+```
+
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = temp_celcius, y = total_nbr_rentals)) + 
   geom_jitter(alpha = 0.1)
 ```
+
 ### Model
 
-Create test and train data set
+```{r}
+train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 5, verboseIter = FALSE, allowParallel = TRUE)
+```
+
+
+```{r caret_model_fit, cache=TRUE}
+fit_mod <- bikeshare %>% 
+  select(-date_time) %>% 
+  train(total_nbr_rentals ~ ., data = ., method = "ranger", trControl = train_control, preProcess = c("center", "scale"), num.threads = nbr_cores, importance = "impurity")
+
+fit_mod
+```
+```{r}
+variable_importance <- varImp(fit_mod)
+```
 
 ```{r}
-
+plot(variable_importance)
 ```
 
 
