@@ -2,7 +2,7 @@
 title: "Rush Hour Explorations"
 subtitle: "Assignment for PVG0038 Reproducibility in Research with a focus on data analysis using the program R"
 author: "Alexander Koc"
-date: '2020-11-04'
+date: '2020-11-05'
 output: 
   html_document:
     toc: true
@@ -16,7 +16,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Abstract
 
-Hello world.
+In this short report I investigate the value of adding two new features to the Kaggle bikeshare data set: `hour` denoting 
+hour of day and boolean variable `rush_hour` to denote if the current hour is during rush hour or not. The two variables
+will be evaluated together with the remaining predictors by fitting a random model forest and extracting variable 
+importance metrics.
 
 ## Materials and Methods 
 
@@ -154,6 +157,7 @@ bikeshare %>%
   ggplot(aes(y = feels_like_temp_celcius, x = temp_celcius)) + 
   geom_point() 
 ```
+
 Uhh, except that really weird horizontal line. What's going on? Let's look at that interval.
 
 ```{r}
@@ -187,7 +191,7 @@ bikeshare %>%
 ```
 No missing data.
 
-#### Exploring categorical variables
+#### Exploring default variables
 
 Start by looking how rides are distributed across the different weather types. The higher the weather code, the more 
 terrible the weather. 
@@ -207,18 +211,26 @@ bikeshare %>%
   geom_violin()
 ```
 
-No idea about that spring effect. Would expect winter to look like spring does.
+No idea about why there are less rides during spring. Would expect winter to look like spring does.
 
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = working_day, y = total_nbr_rentals)) +
   geom_violin()
 ```
+
+Working days have different distribution of ride counts compared to non working days.
+
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = holiday, y = total_nbr_rentals)) +
   geom_violin()
 ```
+
+### Adding new features
+
+#### `hour`
+
 Next, visualize total number of rentals by daily hour -- the new variable introduced earlier in code. 
 
 ```{r}
@@ -226,6 +238,7 @@ bikeshare %>%
   ggplot(aes(x = hour, y = total_nbr_rentals)) +
   geom_jitter(alpha = 0.1)
 ```
+
 Clear peak of rides around rush hours. Investigate to see if there is an interaction
 with the workday variable.
 
@@ -234,6 +247,7 @@ bikeshare %>%
   ggplot(aes(x = hour, y = total_nbr_rentals, color = working_day)) +
   geom_jitter(alpha = 0.1)
 ```
+
 Split up the plot above into two plots and the pattern becomes more clear. Rush hour peaks of course exist on working days.
 Weekends seem to have more bike share activity in the hours on and after midnight.
 
@@ -243,7 +257,10 @@ bikeshare %>%
   geom_jitter(alpha = 0.1) +
   facet_wrap(~working_day)
 ```
-Create new boolean variable `rush_hour`:
+
+#### `rush_hour`
+
+Create new boolean variable `rush_hour` by intersecting all hours between 05-10 and 15-19 when `working_day == TRUE`:
 
 ```{r}
 bikeshare <- bikeshare %>% 
@@ -267,11 +284,13 @@ How does the new feature describe the data?
 
 ```{r}
 bikeshare %>% 
-  ggplot(aes(x = rush_hour, y= total_nbr_rentals)) + 
-  geom_violin()
+  ggplot(aes(fill = rush_hour, x = total_nbr_rentals)) + 
+  geom_histogram()
+
 ```
 Less counts distributed around 0 for rush hour hours.
 
+#### Interactions of new features with other features
 
 Continue looking at rides per hour, but this time split by seasons and weather
 
@@ -285,7 +304,7 @@ bikeshare %>%
 Again, what is it about spring? Not much visual difference between other seasons. Even seems like spring has effect on weekday
 bike shares.
 
-Next up split by weather.
+Next up, split by weather.
 
 ```{r}
 bikeshare %>% 
@@ -298,11 +317,11 @@ Unbalanced data with worsening weather, but _if_ plots are to be believed then l
 
 Could look more into how weather types interact with seasons.
 
-#### Exploration of quantitative predictors
+Look at actual temperature:
 
 ```{r}
 bikeshare %>% 
-  ggplot(aes(x = temp_celcius, y = total_nbr_rentals)) + 
+  ggplot(aes(x = feels_like_temp_celcius, y = total_nbr_rentals)) + 
   geom_point(alpha = 0.1) +
   geom_smooth() 
 ```
@@ -314,25 +333,11 @@ bikeshare %>%
   geom_smooth() +
   facet_wrap(~hour)
 ```
-Next up, wind speed. Personal experience of biking to and from Malmö leaves me strongly prejudiced for this variable 
-having some sort of effect in data:
+The effect of temperature is specific to which hour it is, sort of. Guessing there is _probably_ an interaction with 
+season and weather, not to mention humidity here. Outside the scope of this course though.
 
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = wind_speed, y = total_nbr_rentals)) + 
-  geom_jitter(alpha = 0.1) +
-  geom_smooth() 
-```
-Any difference for high wind speeds in working/non working days?
+How about wind speed?
 
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = wind_speed, y = total_nbr_rentals, color = rush_hour)) + 
-  geom_jitter(alpha = 0.1) +
-  facet_wrap(~working_day)
-```
-
-What about by  hour_
 
 ```{r}
 bikeshare %>% 
@@ -345,8 +350,8 @@ Nothing as clear as the temperature effect by hour.
 
 ### Model
 
-We will do a 5-fold CV to figure out the best configuration of random forest for our data. Probably should use a higher
-k-fold with repeats. This takes too much time though.
+We will fit a random forest model using caret. Best model will be selected on basis of 5-fold cross validation.
+Variable importance will be assessed by extracting variable importance metrics from final model and plotting.
 
 ```{r}
 train_control <- trainControl(method = "repeatedcv", number = 5, repeats = 0, verboseIter = FALSE, allowParallel = TRUE)
@@ -356,6 +361,7 @@ Remove the `date_time` column and fit model using all predictor variables. Use `
 model fit. Predictors are centered and scaled.
 
 ```{r caret_model_fit, cache=TRUE}
+# This might take a few minutes to run!
 fit_mod <- bikeshare %>% 
   select(-date_time) %>% 
   train(total_nbr_rentals ~ ., data = ., method = "ranger", trControl = train_control, preProcess = c("center", "scale"), num.threads = nbr_cores, importance = "impurity")
@@ -368,8 +374,7 @@ Extract and plot the variable importance metrics for predictors:
 variable_importance <- varImp(fit_mod)
 plot(variable_importance)
 ```
-As seen in exploratory plots: hour of day and whether or not it is rush hour are important factors when predicting 
-total number of rides per day.
+The two added features `hour` and `rush_hour` are at the top of the variable importance plot.
 
 ## Literature
 
