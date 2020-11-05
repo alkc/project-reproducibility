@@ -33,6 +33,8 @@ Set random seed for reproducibility.
 set.seed(777)
 ```
 
+To install all packages required for analysis, please run the following command in R `source("install_dependencies.R")`
+
 ```{r libs_and_data, message=FALSE}
 library(tidyverse)
 library(corrplot)
