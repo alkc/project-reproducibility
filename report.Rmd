@@ -191,47 +191,12 @@ bikeshare %>%
 ```
 No missing data.
 
-#### Exploring default variables
-
-Start by looking how rides are distributed across the different weather types. The higher the weather code, the more 
-terrible the weather. 
- 
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = weather, y = total_nbr_rentals)) +
-  geom_violin() 
-```
-The violin plot suggests that total number of rides for class 3 bad weathers lean more towards lower counts.
-
-We do the same visualization for the different types of seasons:
-
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = season, y = total_nbr_rentals)) +
-  geom_violin()
-```
-
-No idea about why there are less rides during spring. Would expect winter to look like spring does.
-
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = working_day, y = total_nbr_rentals)) +
-  geom_violin()
-```
-
-Working days have different distribution of ride counts compared to non working days.
-
-```{r}
-bikeshare %>% 
-  ggplot(aes(x = holiday, y = total_nbr_rentals)) +
-  geom_violin()
-```
 
 ### Adding new features
 
 #### `hour`
 
-Next, visualize total number of rentals by daily hour -- the new variable introduced earlier in code. 
+Visualize total number of rentals by daily hour -- the new variable introduced earlier in code. 
 
 ```{r}
 bikeshare %>% 
@@ -317,18 +282,18 @@ Unbalanced data with worsening weather, but _if_ plots are to be believed then l
 
 Could look more into how weather types interact with seasons.
 
-Look at actual temperature:
+Look at temperature:
 
 ```{r}
 bikeshare %>% 
-  ggplot(aes(x = feels_like_temp_celcius, y = total_nbr_rentals)) + 
+  ggplot(aes(x = temp_celcius, y = total_nbr_rentals)) + 
   geom_point(alpha = 0.1) +
   geom_smooth() 
 ```
 
 ```{r}
 bikeshare %>% 
-  ggplot(aes(x = feels_like_temp_celcius, y = total_nbr_rentals)) + 
+  ggplot(aes(x = temp_celcius, y = total_nbr_rentals)) + 
   geom_point(alpha = 0.1) +
   geom_smooth() +
   facet_wrap(~hour)
