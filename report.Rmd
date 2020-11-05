@@ -23,6 +23,8 @@ importance metrics.
 
 ## Materials and Methods 
 
+Data set from Kaggle. Data viz with ggplot2 and model fit with caret.
+
 ## Results
 
 ### Data preparation
