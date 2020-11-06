@@ -13,4 +13,5 @@ git clone https://github.com/alkc/project-reproducibility.git
 Open the `project-reproducibility.Rproj` using Rstudio. Next, run the code contained in `install_dependencies.R` script 
 to install all analysis dependencies.
 
-You are now ready to-rerun the code contained in the  `report.Rmd` file. 
+You are now ready to-rerun the code contained in the  `report.Rmd` file. The easiest way to do this is to re-knit
+`report.rmd` in Rstudio.

@@ -1,7 +1,7 @@
 ---
 title: "Rush Hour Explorations"
 subtitle: "Assignment for PVG0038 Reproducibility in Research with a focus on data analysis using the program R"
-author: "Alexander Koc"
+author: "Alexander Koc (alexander.koc@slu.se)"
 date: '2020-11-06'
 output: 
   html_document:
@@ -15,12 +15,14 @@ bibliography: references.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Abstract
+## Summary
 
 In this short report I investigate the value of adding two new features to the Kaggle bikeshare data set: `hour` denoting 
 hour of day and boolean variable `rush_hour` to denote if the current hour is during rush hour or not. The two variables
 will be evaluated together with the remaining predictors by fitting a random model forest and extracting variable 
 importance metrics.
+
+This document and associated files required for re-running the analysis can be downloaded from: https://github.com/alkc/project-reproducibility
 
 ## Data
 
@@ -33,7 +35,7 @@ demand in the program [@fanaee-t_event_2014].
 All analysis below will be conducted in the statistical programming language R [@R]. The data exploration and model fit 
 will rely heavily on the `tidyverse` family of packages [@tidyverse] and the modeling package [@caret]. Random forest models 
 will be fit using `ranger` [@ranger]. Correlation plot will be constructed using `corrplot` [@corrplot2017]. Other utility 
-packages include `here` [@here], `parallel` [@parallel], `forcats` [@forcats] and `lubridate` [@lubridate]. For a full
+packages include `here` [@here], `parallel` [@R], `forcats` [@forcats] and `lubridate` [@lubridate]. For a full
 specification of R and package versions used in creating this document, please refer to the [session info](#Session)
 
 
