@@ -2,12 +2,13 @@
 title: "Rush Hour Explorations"
 subtitle: "Assignment for PVG0038 Reproducibility in Research with a focus on data analysis using the program R"
 author: "Alexander Koc"
-date: '2020-11-05'
+date: '2020-11-06'
 output: 
   html_document:
     toc: true
     toc_depth: 3
     toc_float: true
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -21,9 +22,20 @@ hour of day and boolean variable `rush_hour` to denote if the current hour is du
 will be evaluated together with the remaining predictors by fitting a random model forest and extracting variable 
 importance metrics.
 
-## Materials and Methods 
+## Data
 
-Data set from Kaggle. Data viz with ggplot2 and model fit with caret.
+The data set contains historical usage patterns for the Capital Bikeshare program in Washington, D.C., together with 
+weather data. The purpose of the Kaggle competition in which this data set was made available was to forecast bike rental 
+demand in the program [@fanaee-t_event_2014].
+
+## Packages
+
+All analysis below will be conducted in the statistical programming language R [@R]. The data exploration and model fit 
+will rely heavily on the `tidyverse` family of packages [@tidyverse] and the modeling package [@caret]. Random forest models 
+will be fit using `ranger` [@ranger]. Correlation plot will be constructed using `corrplot` [@corrplot2017]. Other utility 
+packages include `here` [@here], `parallel` [@parallel], `forcats` [@forcats] and `lubridate` [@lubridate]. For a full
+specification of R and package versions used in creating this document, please refer to the [session info](#Session)
+
 
 ## Results
 
@@ -35,7 +47,8 @@ Set random seed for reproducibility.
 set.seed(777)
 ```
 
-To install all packages required for analysis, please run the following command in R `source("install_dependencies.R")`
+To install all packages required for analysis, please run the following command in R from the project directory:
+`source("install_dependencies.R")`
 
 ```{r libs_and_data, message=FALSE}
 library(tidyverse)
@@ -307,7 +320,6 @@ season and weather, not to mention humidity here. Outside the scope of this cour
 
 How about wind speed?
 
-
 ```{r}
 bikeshare %>% 
   ggplot(aes(x = wind_speed, y = total_nbr_rentals)) + 
@@ -345,8 +357,6 @@ plot(variable_importance)
 ```
 The two added features `hour` and `rush_hour` are at the top of the variable importance plot.
 
-## Literature
-
 ## Session
 
 Packages and R version used in my analysis.
@@ -355,3 +365,4 @@ Packages and R version used in my analysis.
 devtools::session_info()
 ```
 
+## References
